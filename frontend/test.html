@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>RIASEC Test</title>
+  </head>
+
+  <body>
+    <h2>Test RIASEC</h2>
+
+    <p>Thích sửa máy (R)</p>
+    <input type="number" id="r" min="1" max="5" />
+
+    <p>Thích nghiên cứu (I)</p>
+    <input type="number" id="i" />
+
+    <p>Thích sáng tạo (A)</p>
+    <input type="number" id="a" />
+
+    <p>Thích giúp người (S)</p>
+    <input type="number" id="s" />
+
+    <p>Thích kinh doanh (E)</p>
+    <input type="number" id="e" />
+
+    <p>Thích làm việc giấy tờ (C)</p>
+    <input type="number" id="c" />
+
+    <br /><br />
+    <button onclick="submitTest()">Xem kết quả</button>
+
+    <div id="out"></div>
+
+    <script>
+      async function submitTest() {
+        let user = [+r.value, +i.value, +a.value, +s.value, +e.value, +c.value];
+
+        let res = await fetch("http://localhost:3000/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user }),
+        });
+
+        let data = await res.json();
+
+        let html = "<h3>Top ngành:</h3>";
+        data.result.forEach((j) => {
+          html += `<p>${j.job}: ${j.score}</p>`;
+        });
+
+        html += `<h3>AI tư vấn:</h3>${data.chatbot}`;
+
+        out.innerHTML = html;
+      }
+    </script>
+  </body>
+</html>

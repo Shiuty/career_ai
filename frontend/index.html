@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI Career Chat</title>
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        background: #2563eb;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f0f4ff;
+      }
+
+      .msg {
+        margin: 10px 0;
+        padding: 12px;
+        border-radius: 12px;
+        max-width: 70%;
+      }
+
+      .user {
+        background: #2563eb;
+        color: white;
+        margin-left: auto;
+      }
+
+      .bot {
+        background: #e5e7eb;
+      }
+
+      button {
+        margin: 5px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: none;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      .input-area {
+        display: flex;
+        padding: 10px;
+        background: white;
+        border-top: 1px solid #ccc;
+      }
+
+      input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="header">AI Tư vấn nghề nghiệp</div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="input-area">
+      <input id="msg" placeholder="Nhập câu hỏi..." />
+      <button onclick="send()">Gửi</button>
+    </div>
+
+    <script>
+      let allowChat = false;
+      let index = 0;
+      let score = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+
+      const questions = [
+        { text: "Bạn thích sửa máy?", type: "R" },
+        { text: "Bạn thích nghiên cứu?", type: "I" },
+        { text: "Bạn thích sáng tạo?", type: "A" },
+        { text: "Bạn thích giúp người?", type: "S" },
+        { text: "Bạn thích kinh doanh?", type: "E" },
+        { text: "Bạn thích giấy tờ?", type: "C" },
+      ];
+
+      function add(text, type) {
+        let div = document.createElement("div");
+        div.className = "msg " + type;
+        div.innerText = text;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function clearButtons() {
+        document.querySelectorAll(".option").forEach((e) => e.remove());
+      }
+
+      window.onload = () => {
+        add("Bạn nên làm bài test RIASEC để mình tư vấn chính xác hơn.", "bot");
+
+        let btn = document.createElement("button");
+        btn.innerText = "👉 Làm test";
+        btn.onclick = startTest;
+        btn.className = "option";
+
+        chat.appendChild(btn);
+      };
+
+      function startTest() {
+        index = 0;
+        score = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+        ask();
+      }
+
+      function ask() {
+        clearButtons();
+
+        let q = questions[index];
+        add(`Câu ${index + 1}/${questions.length}: ${q.text}`, "bot");
+
+        [
+          "Rất không thích",
+          "Không thích",
+          "Bình thường",
+          "Thích",
+          "Rất thích",
+        ].forEach((t, i) => {
+          let b = document.createElement("button");
+          b.innerText = t;
+          b.className = "option";
+          b.onclick = () => answer(i + 1);
+          chat.appendChild(b);
+        });
+      }
+
+      function answer(val) {
+        clearButtons();
+        score[questions[index].type] += val;
+        index++;
+
+        if (index < questions.length) {
+          ask();
+        } else {
+          finish();
+        }
+      }
+
+      async function finish() {
+        let user = [score.R, score.I, score.A, score.S, score.E, score.C];
+
+        let res = await fetch("http://localhost:3000/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user }),
+        });
+
+        let data = await res.json();
+
+        add("🎯 Top ngành phù hợp:", "bot");
+
+        data.result.forEach((j) => {
+          add(j.job + " (" + j.score + ")", "bot");
+        });
+
+        add(data.chatbot, "bot");
+
+        allowChat = true;
+      }
+
+      async function send() {
+        if (!allowChat) {
+          add("Bạn cần làm test trước nhé!", "bot");
+          return;
+        }
+
+        let text = msg.value;
+        add(text, "user");
+
+        let res = await fetch("http://localhost:3000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        });
+
+        let data = await res.json();
+        add(data.reply, "bot");
+      }
+    </script>
+  </body>
+</html>
